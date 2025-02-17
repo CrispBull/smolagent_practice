@@ -18,17 +18,6 @@ def get_current_time_in_timezone(timeZone: str) -> str:
         return f"Error: {str(e)}"
 
 @tool
-def my_custom_tool(arg1: str, arg2: int) -> str:
-    """
-    A dummy tool for demonstration.
-
-    Args:
-        arg1: First argument
-        arg2: Second argument
-    """
-    return f"Custom tool called with arg1={arg1} and arg2={arg2}"
-
-@tool
 def summarize_topic(topic: str) -> str:
     """
     This agent uses a web search tool to getch search results for the provided topic and the summarizes them and
