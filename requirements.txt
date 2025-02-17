@@ -1,0 +1,4 @@
+smolagents
+huggingface_hub
+pytz
+pyyaml
