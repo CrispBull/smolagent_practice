@@ -1,5 +1,5 @@
-from smolagents import CodeAgent, HfApiModel, GradioUI
-from tools.my_tools import get_current_time_in_timezone, my_custom_tool
+from smolagents import CodeAgent, HfApiModel, GradioUI, DuckDuckGoSearchTool
+from tools.my_tools import get_current_time_in_timezone, my_custom_tool, summarize_topic
 from tools.final_answer import final_answer
 from dotenv import load_dotenv
 import os
@@ -24,11 +24,11 @@ model = HfApiModel(
 
 agent = CodeAgent(
     model=model,
-    tools=[final_answer, get_current_time_in_timezone, my_custom_tool],
+    tools=[final_answer, get_current_time_in_timezone, my_custom_tool, DuckDuckGoSearchTool(), summarize_topic],
     max_steps=6,
     #prompt_templates=prompt_templates # not using a custom template
 )
 
 if __name__ == "__main__":
-    result = agent.run("What is the current time in Flic en Flac, Mauritius")
+    result = agent.run("What is currently happening in Epigenetics")
     print("Agent execution completed.")
