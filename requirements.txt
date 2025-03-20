@@ -4,3 +4,7 @@ pytz
 pyyaml~=6.0.2
 python-dotenv~=1.0.1
 transformers
+matplotlib~=3.10.0
+pillow~=11.1.0
+duckduckgo_search~=7.4.2
+fastcore~=1.7.29

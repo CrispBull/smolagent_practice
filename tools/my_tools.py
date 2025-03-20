@@ -1,4 +1,5 @@
-from smolagents import tool, load_tool
+from smolagents import tool, load_tool, TransformersModel
+from huggingface_hub import login
 
 
 @tool
@@ -31,8 +32,30 @@ def summarize_topic(topic: str) -> str:
     summary = summarizer(topic, max_length=100, min_length=30, do_sample=False)
     return summary[0]['summary_text']
 
-image_generation_tool = load_tool("m-ric/text-to-image", trust_remote_code=True)
 
+@tool
+def suggest_menu(occasion: str) -> str:
+    """
+    Suggests a menu based on the occassion
+
+    Args:
+        occasion: The type of occassion for the party. Allowed values are:
+            - "Casual": Menu for casual party.
+            - "Formal": Menu for formal party.
+            - "Superhero": Menu for superhero party.
+            - "Custom": Custom menu.
+    """
+    if occasion.lower() == "casual":
+        return "Pizza, snacks, and drinks"
+    elif occasion.lower() == "formal":
+        return "3-course dinner with wine and dessert."
+    elif occasion.lower() == "superhero":
+        return "Buffet with high energy and healthy food"
+    else:
+        return "Custom menu for the butler."
+
+
+image_generation_tool = load_tool("agents-course/text-to-image", trust_remote_code=True)
 
 
 
