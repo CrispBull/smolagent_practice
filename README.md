@@ -1,6 +1,4 @@
-from smolagents import HfApiModelfrom smolagents import CodeAgent
-
-# Agent Systems Note
+## Agent Systems Note
 
 Test building agents with smolagents library
 
@@ -89,8 +87,52 @@ agent.run(
 )
 ```
 
-We can share our agent with the community via Huggingface Hub too and anyone can easily download and use the agent 
+We can share our agent with the community via Huggingface Hub too and anyone can easily download and use the agent
 directly from the hub. To do this;
+
 ```python
 agent.push_to_hub("yourHFUserName/RepoName")
 ```
+
+To download the agent again;
+
+```python
+my_agent = agent.from_hub("yourHFUserName/RepoName", trust_remote_code=True)
+my_agent.run("Give me a playlist for a birthday party")
+```
+
+Shared agents are also available as Hugging Face Spaces, so we can interact with them in real time.
+
+Smolagents uses OpenTelemetry standard for instrumenting agent runs, making it possible to inspection of agent
+activities and logging. Using [Langfuse](https://langfuse.com/)
+or [alternatives](https://huggingface.co/docs/smolagents/tutorials/inspect_runs) and `SmolagentsInstrumentator` we
+can add the ability to track and analyze our agents behavior. To do this, we first install the necessary dependencies;
+
+```bash
+pip install opentelemetry-sdk opentelemetry-exporter-otlp openinference-instrumentation-smolagents
+```
+
+Then we go to Langfuse to create an account and get our API keys, after which we can now do the following;
+```python
+import os
+import base64
+from opentelemetry.sdk.trace import TracerProvider
+from openinference.instrumentation.smolagents import SmolagentsInstrumentor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+
+LANGFUSE_PUBLIC_KEY="pk-1f-...."
+LANGFUSE_SECRET_KEY="pk-1f-...."
+LANGFUSE_AUTH=base64.b16encode(f"{LANGFUSE_PUBLIC_KEY}:{LANGFUSE_SECRET_KEY}".encode()).decode()
+
+os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = "https://cloud.langfuse.com/api/public/otel" # For EU data region
+# os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = "https://us.cloud.langfuse.com/api/public/otel" # US data region
+os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = f"Authorization=Basic {LANGFUSE_AUTH}"
+
+trace_provider = TracerProvider()
+trace_provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter()))
+SmolagentsInstrumentor().instrument(trace_provider=trace_provider)
+```
+
+With the above, runs from our agent are now being logged to Langfuse, giving us full visibility into the agents 
+behavior.
