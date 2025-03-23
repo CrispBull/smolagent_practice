@@ -87,6 +87,93 @@ agent.run(
 )
 ```
 
+#### Tool Calling Agent
+`ToolCallingAgent` is the other alternative to `CodeAgent` available in smolagents framework. This agent uses built 
+in tool calling capabilities of LLM providers to generate tool calls as JSON. This is the standard approach used by 
+OpenAI, Anthropic, etc. For example, for an action to search for catering services and party ideas, a `CodeAgent` 
+would create an action like;
+```python
+for query in [
+    "Best catering services in Lagos",
+    "Party theme ideas for superheroes"
+]:
+    print(web_search(f"Search for {query}"))
+```
+On the other hand, a `ToolCallingAgent` would instead create something like;
+```json
+[
+  {"name": "web_search", "arguments": "Best catering services in Gotham City" },
+  {"name": "web_search", "arguments": "Party theme ideas for superheroes" }
+]
+```
+This json is then used to execute the tool calls. ToolCallingAgent internally work similar to CodeAgent with the 
+multi-step workflow, however they differ in how they structure their action as shown above which the system then 
+parses to execute the right tools.
+
+### Tools
+Tools are functions that the LLM can call within an agent system. The interface for a tool has the following components;
+- Name: The name of the tool
+- Description: What the tool does
+- Input types and description: The arguments which the tool function accepts and their description
+- Output type: what the tool returns
+For example, check out the following summary tool;
+```python
+@tool
+def summarize_topic(topic: str) -> str:
+    """
+    This agent uses a web search tool to getch search results for the provided topic and the summarizes them and
+    returns the summary
+
+    Args:
+        topic: The topic to provide summary for
+    """
+    from transformers import pipeline
+    summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+    summary = summarizer(topic, max_length=100, min_length=30, do_sample=False)
+    return summary[0]['summary_text']
+```
+In smolagents, we can create a tool by extending the `Tool` class or using the `@tool` decorator. In the above the 
+tool name is `summarize_topic`, the tool description is in the function docstring, the input type is in the function 
+argument and description is in the docstring, the output type is the function return type. It's recommended to name 
+your function properly and write good descriptions for the function as well as for both input ad output. 
+
+We can also define a tool with a class;
+```python
+from smolagents import Tool
+
+class SuperheroPartyThemeTool(Tool):
+    name = "superhero_party_theme_generator"
+    description = """
+    This tool suggests creative superhero-themed party ideas based on a category.
+    It returns a unique party theme idea"""
+
+    inputs = {
+        "category": {
+            "type": "string",
+            "description": "The type of superhero party (eg., 'classic heroes', 'villian masquerade', 'futuristic "
+                           "Gotham')."
+        }
+    }
+    output_type = "string"
+
+    def forward(self, category: str):
+        themes = {
+            "classic heroes": "Justice League Gala: Guests come dressed as their favorite DC heroes with themed cocktails like 'The Kryptonite Punch'.",
+            "villain masquerade": "Gotham Rogues' Ball: A mysterious masquerade where guests dress as classic Batman villains.",
+            "futuristic Gotham": "Neo-Gotham Night: A cyberpunk-style party inspired by Batman Beyond, with neon decorations and futuristic gadgets."
+        }
+
+        return themes.get(category.lower(),
+                          "Themed party idea not found. Try 'classic heroes', 'villain masquerade', or 'futuristic Gotham'.")
+```
+In the above, we can see it extends the `Tool` class. This approach is usually recommended for more complex tools. 
+In this class we can see we have defined the `name`, `output_type`, `description`, `inputs` and then a `forward` 
+function which is the method containing the inference logic to execute. We can look at the `Tool` class definition 
+to learn more about these overridden properties. 
+
+Smolagent comes with a set of default tools, you can find these in the `default_tools.py` file.
+
+### Sharing and using tools from community
 We can share our agent with the community via Huggingface Hub too and anyone can easily download and use the agent
 directly from the hub. To do this;
 
@@ -95,14 +182,25 @@ agent.push_to_hub("yourHFUserName/RepoName")
 ```
 
 To download the agent again;
-
 ```python
 my_agent = agent.from_hub("yourHFUserName/RepoName", trust_remote_code=True)
 my_agent.run("Give me a playlist for a birthday party")
 ```
+Shared agents are also available as Hugging Face Spaces, so we can interact with them in real time. We can also 
+import a tool from Huggingface Hub instead of building from scratch. For example, we can import an image generation 
+tool from huggingface hub and make use of it in our agent;
+```python
+from smolagents import load_tool
 
-Shared agents are also available as Hugging Face Spaces, so we can interact with them in real time.
+image_generation_tool = load_tool("m-ric/text-to-image", trust_remote_code=True)
+```
+We can also import a huggingface space as a tool using the `Tool.from_space()` function, making it possible to 
+integrate with thousands of spaces from the community for various tasks. 
 
+We can also import tools from Langchain in our smolagents workflow. To do this, we'll make use of the `Tool.
+from_langchain()`
+
+#### Logging and Monitoring
 Smolagents uses OpenTelemetry standard for instrumenting agent runs, making it possible to inspection of agent
 activities and logging. Using [Langfuse](https://langfuse.com/)
 or [alternatives](https://huggingface.co/docs/smolagents/tutorials/inspect_runs) and `SmolagentsInstrumentator` we
@@ -136,3 +234,10 @@ SmolagentsInstrumentor().instrument(trace_provider=trace_provider)
 
 With the above, runs from our agent are now being logged to Langfuse, giving us full visibility into the agents 
 behavior.
+
+#### Classwork
+- Play with other peoples agents, even import 
+- Connect to OpenTelemetry and see own agent in action
+- Setup Gradio UI 
+- Answer questions in course forum
+- 

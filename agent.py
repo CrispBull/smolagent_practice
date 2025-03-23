@@ -1,47 +1,32 @@
-from smolagents import CodeAgent, HfApiModel, DuckDuckGoSearchTool, VisitWebpageTool
-from tools.my_tools import get_current_time_in_timezone, summarize_topic, image_generation_tool, suggest_menu, \
-    catering_service_tool, SuperheroPartyThemeTool
-from tools.final_answer import final_answer
+from smolagents import CodeAgent, HfApiModel, DuckDuckGoSearchTool, GradioUI
+from myagents_tools.my_tools import get_current_time_in_timezone, suggest_menu, SuperheroPartyThemeTool, \
+    summarize_topic, catering_service_tool, space_image_tool
+from myagents_tools.final_answer import final_answer
 from dotenv import load_dotenv
 import os
-import datetime
-
 
 load_dotenv()
 token = os.getenv("HF_TOKEN")
 
-# Not using a custom prompt template
-# try:
-#     with open("prompts.yaml", 'r') as f:
-#         prompt_templates = yaml.safe_load(f)
-# except Exception:
-#     prompt_templates = None
-
 model = HfApiModel(
-    model_id="Qwen/Qwen2.5-Coder-32B-Instruct",
+    model_id="https://pflgm2locj2t89co.us-east-1.aws.endpoints.huggingface.cloud/",
     token=token,
     max_tokens=1500,
     temperature=0.5
 )
 
+# Create a simplified agent for pushing to HuggingFace with fewer tools
+# to avoid errors with external dependencies
 agent = CodeAgent(
     model=model,
-    tools=[final_answer, get_current_time_in_timezone, DuckDuckGoSearchTool(), summarize_topic, image_generation_tool,
-           suggest_menu, VisitWebpageTool, catering_service_tool, SuperheroPartyThemeTool()],
-    max_steps=10, additional_authorized_imports=['datetime'], verbosity_level=2
-    #prompt_templates=prompt_templates # not using a custom template
+    tools=[final_answer, get_current_time_in_timezone, DuckDuckGoSearchTool(),
+           suggest_menu, SuperheroPartyThemeTool(), catering_service_tool,
+           summarize_topic, space_image_tool],
+    max_steps=10,
+    additional_authorized_imports=['datetime'],
+    verbosity_level=2
 )
 
-
 if __name__ == "__main__":
-    # print(np.__version__)
-    #Make recommendations for songs to play at party in Lagos, Nigeria
-    agent.push_to_hub('Justchidi/smolagent_practice')
-
-    # result = agent.run()
-    # print(f'Agent execution completed {result}')
-    
-    
-    
-    
-    
+    GradioUI(agent).launch()
+    # Just push to HuggingFace Hub
