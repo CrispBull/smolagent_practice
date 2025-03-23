@@ -1,6 +1,6 @@
 from smolagents import CodeAgent, HfApiModel, DuckDuckGoSearchTool, GradioUI
 from myagents_tools.my_tools import get_current_time_in_timezone, suggest_menu, SuperheroPartyThemeTool, \
-    summarize_topic, catering_service_tool, space_image_tool
+    summarize_topic, catering_service_tool, space_image_tool, party_planning_retriever
 from myagents_tools.final_answer import final_answer
 from dotenv import load_dotenv
 import os
@@ -21,7 +21,7 @@ agent = CodeAgent(
     model=model,
     tools=[final_answer, get_current_time_in_timezone, DuckDuckGoSearchTool(),
            suggest_menu, SuperheroPartyThemeTool(), catering_service_tool,
-           summarize_topic, space_image_tool],
+           summarize_topic, space_image_tool, party_planning_retriever],
     max_steps=10,
     additional_authorized_imports=['datetime'],
     verbosity_level=2

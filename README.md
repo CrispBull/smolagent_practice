@@ -173,6 +173,41 @@ to learn more about these overridden properties.
 
 Smolagent comes with a set of default tools, you can find these in the `default_tools.py` file.
 
+### Agentic RAG Systems
+Traditional RAG (Retrieval Augumented Generation) systems basically combine data retrieval and gen ai to provide 
+context aware responses. For example, given a user query, we pass the query to a search engine or db for example and 
+retrieve results, this retrieved result is then given to a model alongside the query and then the model generates a 
+response based on the query and the earlier retrieved information. Agentic RAG extends this by combining autonomous 
+agents with dynamic knowledge retrieval via an intelligent control of both the retrieval and generation process. 
+Traditional RAG systems has the limitation of relying on a single retrieval step and focusing on direct semantic 
+similarity which may overlook certain relevant information, Agentic RAG addresses this by allowing the agent to 
+formulate the search queries, critique the retrieved results and conduct multiple retrieval steps if necessary.
+
+For example, say we enter the following query in an agentic rag system; *"Search for luxury superhero-themed party 
+ideas, including decorations, entertainment, and catering."*, assuming we're using the `DuckDuckSearchTool` in 
+smolagents, our agent would first analyze the request to identify key elements of the query, then it performs 
+retrieval, in this case using our search tool, then it synthesizes the information after gathering the search 
+results, then it stores the result for future references in case it needs it later for subsequent tasks. 
+
+Sometimes we might need a custom knowledge base for certain tasks. Such data are usually stored in a vector database.
+A vector database is a database for storing, managing and searching numerical representations (embeddings) of text 
+or other kinds of data. This approach of saving data enables semantic search by identifying similar data points 
+based on their numerical representation in this high dimensional space. An simple example of this is the 
+`PartyPlanningRetrievalTool` defined in the `my_tools.py` file.
+
+When building agentic RAG systems, the agent can use strategies like;
+- Query reformulation: Instead of using the same raw user query, the agent can craft optimized search terms to 
+  better match the target documents
+- Use multi-step retrieval so that initial results are used to inform subsequent queries
+- combine information from multiple sources like web and local documentation
+- explore ways to validate results for relevance and accuracy before being included in responses. 
+
+Building effective agentic RAG systems requires carefully considering all the key aspects as well as the tools made 
+available to it based on type of query and context. Memory systems in these programs helps maintain conversation 
+history to avoid repetitive retrievals. Its important to also have fallback strategies to ensure that the systems 
+can still provide some value when the primary retrieval methods fail. 
+
+
 ### Sharing and using tools from community
 We can share our agent with the community via Huggingface Hub too and anyone can easily download and use the agent
 directly from the hub. To do this;

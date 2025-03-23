@@ -11,3 +11,4 @@ duckduckgo_search~=7.4.2
 fastcore~=1.7.29
 langchain~=0.3.21
 huggingface-hub~=0.28.1
+langchain-community~=0.3.20
