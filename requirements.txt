@@ -2,6 +2,8 @@ smolagents~=1.9.2
 huggingface_hub
 pytz
 gradio
+helium~=5.1.1
+selenium
 pyyaml~=6.0.2
 python-dotenv~=1.0.1
 transformers
@@ -12,3 +14,5 @@ fastcore~=1.7.29
 langchain~=0.3.21
 huggingface-hub~=0.28.1
 langchain-community~=0.3.20
+requests~=2.32.3
+litellm~=1.63.14

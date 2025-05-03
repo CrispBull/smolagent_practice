@@ -36,14 +36,14 @@ your application logic isn't complex and you want to quickly experiment without 
 
 Agents in smolagents operate as multi-step agents which means that the agents can act in multiple steps where each
 step consists of one thought, one tool call for the thought and the execution with the tool. Both CodeAgent
-(actions/actions specified in code) and ToolCallingAgent (tool/actions specified in JSON) are subclasses
+(actions specified in code) and ToolCallingAgent (tool/actions specified in JSON) are subclasses
 are of MultiStepAgent. We can define a tool using the `@tool` decorator or the `Tool` class
 
 #### Model integrations
 
 Smolagents can work with many LLM models as long as they
 fulfil [certain requirements](https://huggingface.co/docs/smolagents/main/en/reference/models). There are some
-predefined classes that helps with model integratons;
+predefined classes that helps with model integrations;
 
 - TransformersModel - for a local transformer pipeline
 - HfApiModel - for serverless inference calls using HuggingFace's infra or third party inference providers
@@ -61,10 +61,9 @@ natural with LLMs.
 `CodeAgent` performs actions via a cycle of steps. First the system prompt is stored in the `SystemPromptStep` and
 the user query is logged in a `TaskStep`. Then we enter a loop where we first write the agent's log into a list of
 LLM-readable chat messages using the `agent.write_memory_to_messages()` method, these messages are then sent to a
-model which generates a completion, the completion is parsed to extract the action, which given its a code agent
+model which generates a completion, the completion is parsed to extract the action, which given it is a code agent
 would be a code snippet. The extracted action executed and the result logged into memory in an`ActionStep`. At the
-end of each step, if the agent includes any function calls in the `agent.step_callback` callback that function is
-executed.
+end of each step, if the agent includes any function calls in the `agent.step_callback`, that function is executed.
 
 Due to security reasons, smolagents python code snippets are executed in
 a [secure sandboxed environment](https://huggingface.co/docs/smolagents/tutorials/secure_code_execution) within the
@@ -88,10 +87,12 @@ agent.run(
 ```
 
 #### Tool Calling Agent
-`ToolCallingAgent` is the other alternative to `CodeAgent` available in smolagents framework. This agent uses built 
-in tool calling capabilities of LLM providers to generate tool calls as JSON. This is the standard approach used by 
-OpenAI, Anthropic, etc. For example, for an action to search for catering services and party ideas, a `CodeAgent` 
+
+`ToolCallingAgent` is the other alternative to `CodeAgent` available in smolagents framework. This agent uses built
+in tool calling capabilities of LLM providers to generate tool calls as JSON. This is the standard approach used by
+OpenAI, Anthropic, etc. For example, for an action to search for catering services and party ideas, a `CodeAgent`
 would create an action like;
+
 ```python
 for query in [
     "Best catering services in Lagos",
@@ -99,29 +100,41 @@ for query in [
 ]:
     print(web_search(f"Search for {query}"))
 ```
+
 On the other hand, a `ToolCallingAgent` would instead create something like;
+
 ```json
 [
-  {"name": "web_search", "arguments": "Best catering services in Gotham City" },
-  {"name": "web_search", "arguments": "Party theme ideas for superheroes" }
+  {
+    "name": "web_search",
+    "arguments": "Best catering services in Gotham City"
+  },
+  {
+    "name": "web_search",
+    "arguments": "Party theme ideas for superheroes"
+  }
 ]
 ```
-This json is then used to execute the tool calls. ToolCallingAgent internally work similar to CodeAgent with the 
-multi-step workflow, however they differ in how they structure their action as shown above which the system then 
+
+This json is then used to execute the tool calls. ToolCallingAgent internally work similar to CodeAgent with the
+multi-step workflow, however they differ in how they structure their action as shown above which the system then
 parses to execute the right tools.
 
 ### Tools
+
 Tools are functions that the LLM can call within an agent system. The interface for a tool has the following components;
+
 - Name: The name of the tool
 - Description: What the tool does
 - Input types and description: The arguments which the tool function accepts and their description
 - Output type: what the tool returns
-For example, check out the following summary tool;
+  For example, check out the following summary tool;
+
 ```python
 @tool
 def summarize_topic(topic: str) -> str:
     """
-    This agent uses a web search tool to getch search results for the provided topic and the summarizes them and
+    This agent uses a web search tool to fetch search results for the provided topic and the summarizes them and
     returns the summary
 
     Args:
@@ -132,14 +145,17 @@ def summarize_topic(topic: str) -> str:
     summary = summarizer(topic, max_length=100, min_length=30, do_sample=False)
     return summary[0]['summary_text']
 ```
-In smolagents, we can create a tool by extending the `Tool` class or using the `@tool` decorator. In the above the 
-tool name is `summarize_topic`, the tool description is in the function docstring, the input type is in the function 
-argument and description is in the docstring, the output type is the function return type. It's recommended to name 
-your function properly and write good descriptions for the function as well as for both input ad output. 
+
+In smolagents, we can create a tool by extending the `Tool` class or using the `@tool` decorator. In the above the
+tool name is `summarize_topic`, the tool description is in the function docstring, the input type is in the function
+argument and description is in the docstring, the output type is the function return type. It's recommended to name
+your function properly and write good descriptions for the function as well as for both input and output.
 
 We can also define a tool with a class;
+
 ```python
 from smolagents import Tool
+
 
 class SuperheroPartyThemeTool(Tool):
     name = "superhero_party_theme_generator"
@@ -166,49 +182,78 @@ class SuperheroPartyThemeTool(Tool):
         return themes.get(category.lower(),
                           "Themed party idea not found. Try 'classic heroes', 'villain masquerade', or 'futuristic Gotham'.")
 ```
-In the above, we can see it extends the `Tool` class. This approach is usually recommended for more complex tools. 
-In this class we can see we have defined the `name`, `output_type`, `description`, `inputs` and then a `forward` 
-function which is the method containing the inference logic to execute. We can look at the `Tool` class definition 
-to learn more about these overridden properties. 
 
-Smolagent comes with a set of default tools, you can find these in the `default_tools.py` file.
+In the above, we can see it extends the `Tool` class. This approach is usually recommended for more complex tools.
+In this class we can see we have defined the `name`, `output_type`, `description`, `inputs` and then a `forward`
+function which is the method containing the inference logic to execute. We can look at the `Tool` class definition
+to learn more about these overridden properties.
+
+Smolagent also comes with a set of default tools, you can find these in the `default_tools.py` file.
 
 ### Agentic RAG Systems
-Traditional RAG (Retrieval Augumented Generation) systems basically combine data retrieval and gen ai to provide 
-context aware responses. For example, given a user query, we pass the query to a search engine or db for example and 
-retrieve results, this retrieved result is then given to a model alongside the query and then the model generates a 
-response based on the query and the earlier retrieved information. Agentic RAG extends this by combining autonomous 
-agents with dynamic knowledge retrieval via an intelligent control of both the retrieval and generation process. 
-Traditional RAG systems has the limitation of relying on a single retrieval step and focusing on direct semantic 
-similarity which may overlook certain relevant information, Agentic RAG addresses this by allowing the agent to 
+
+Traditional RAG (Retrieval Augmented Generation) systems basically combine data retrieval and genAi to provide
+context aware responses. For example, given a user query, we pass the query to a search engine or db for example and
+retrieve results, this retrieved result is then given to a model alongside the query and then the model generates a
+response based on the query and the earlier retrieved information. Agentic RAG extends this by combining autonomous
+agents with dynamic knowledge retrieval via an intelligent control of both the retrieval and generation process.
+Traditional RAG systems has the limitation of relying on a single retrieval step and focusing on direct semantic
+similarity which may overlook certain relevant information, Agentic RAG addresses this by allowing the agent to
 formulate the search queries, critique the retrieved results and conduct multiple retrieval steps if necessary.
 
-For example, say we enter the following query in an agentic rag system; *"Search for luxury superhero-themed party 
-ideas, including decorations, entertainment, and catering."*, assuming we're using the `DuckDuckSearchTool` in 
-smolagents, our agent would first analyze the request to identify key elements of the query, then it performs 
-retrieval, in this case using our search tool, then it synthesizes the information after gathering the search 
-results, then it stores the result for future references in case it needs it later for subsequent tasks. 
+For example, say we enter the following query in an agentic rag system; *"Search for luxury superhero-themed party
+ideas, including decorations, entertainment, and catering."*, assuming we're using the `DuckDuckSearchTool` in
+smolagents, our agent would first analyze the request to identify key elements of the query, then it performs
+retrieval, in this case using our search tool, then it synthesizes the information after gathering the search
+results, then it stores the result for future references in case it needs it later for subsequent tasks.
 
 Sometimes we might need a custom knowledge base for certain tasks. Such data are usually stored in a vector database.
-A vector database is a database for storing, managing and searching numerical representations (embeddings) of text 
-or other kinds of data. This approach of saving data enables semantic search by identifying similar data points 
-based on their numerical representation in this high dimensional space. An simple example of this is the 
+A vector database is a database for storing, managing and searching numerical representations (embeddings) of text
+or other kinds of data. This approach of saving data enables semantic search by identifying similar data points
+based on their numerical representation in this high dimensional space. A simple example of this is the
 `PartyPlanningRetrievalTool` defined in the `my_tools.py` file.
 
 When building agentic RAG systems, the agent can use strategies like;
-- Query reformulation: Instead of using the same raw user query, the agent can craft optimized search terms to 
+
+- Query reformulation: Instead of using the same raw user query, the agent can craft optimized search terms to
   better match the target documents
 - Use multi-step retrieval so that initial results are used to inform subsequent queries
 - combine information from multiple sources like web and local documentation
-- explore ways to validate results for relevance and accuracy before being included in responses. 
+- explore ways to validate results for relevance and accuracy before being included in responses.
 
-Building effective agentic RAG systems requires carefully considering all the key aspects as well as the tools made 
-available to it based on type of query and context. Memory systems in these programs helps maintain conversation 
-history to avoid repetitive retrievals. Its important to also have fallback strategies to ensure that the systems 
-can still provide some value when the primary retrieval methods fail. 
+Building effective agentic RAG systems requires carefully considering all the key aspects as well as the tools made
+available to it based on type of query and context. Memory systems in these programs helps maintain conversation
+history to avoid repetitive retrievals. It's important to also have fallback strategies to ensure that the systems
+can still provide some value when the primary retrieval methods fail.
+
+### Multi-Agent Systems
+
+Multi-Agent systems allows specialized agents to collaborate on complex tasks. Instead of having one agent, tasks
+are distributed among agents with distinct capabilities. This helps improve modularity, scalability and robustness.  
+The specialized agent in a Multi-agent system are coordinated by an orchestrator agent. For example, a Multi-Agent
+RAG system might consist of a web agent for browsing, a retriever agent for fetching information from knowledge
+bases, and an image generation agent for producing visuals, and all these agents would operate under an orchestrator
+that manages the task delegation and interactions, an example of this is `multi_agent` our `agent.py` file. We can
+split tasks between different agents in our system, this gives us the benefit where each agent is more focused on its
+core task, making it more performant, this also allows separation of memories, which helps reduce the count of input 
+tokens at each step, thereby reducing cost and latency, an example of this is the `manager_agent` in the `agent.py` 
+file. 
+
+### Vision Agents
+
+Some tasks go beyond text processing, and so visual capabilities can be crucial for certain kinds of tasks. 
+**smolagents** provides built-in support for vision language models (VLMs), so we can use it to build agents that 
+can process and interpret images effectively. Sometimes we may need to dynamically retrieve images and information 
+from external sources such as from browsing the web like in cases where we don't have necessary images in our 
+database. Images can then be dynamically loaded to the agent's memory during execution. In this approach, our agent 
+leverages the MultiStep characteristic of agents to get images from web or browsing activities to then save in the 
+agents memory (`ActionStep`) so its picked up as the agent loops through the different steps of the agent lifecycle. 
+![Screenshot 2025-05-03 at 7.59.34 PM.png](/images/Screenshot%202025-05-03%20at%208.01.21%E2%80%AFPM.png). An 
+example this dynamic retrieval with vision agent using smolagents is the agent in the `vision_web_browser.py` file. 
 
 
 ### Sharing and using tools from community
+
 We can share our agent with the community via Huggingface Hub too and anyone can easily download and use the agent
 directly from the hub. To do this;
 
@@ -217,25 +262,30 @@ agent.push_to_hub("yourHFUserName/RepoName")
 ```
 
 To download the agent again;
+
 ```python
 my_agent = agent.from_hub("yourHFUserName/RepoName", trust_remote_code=True)
 my_agent.run("Give me a playlist for a birthday party")
 ```
-Shared agents are also available as Hugging Face Spaces, so we can interact with them in real time. We can also 
-import a tool from Huggingface Hub instead of building from scratch. For example, we can import an image generation 
+
+Shared agents are also available as Hugging Face Spaces, so we can interact with them in real time. We can also
+import a tool from Huggingface Hub instead of building from scratch. For example, we can import an image generation
 tool from huggingface hub and make use of it in our agent;
+
 ```python
 from smolagents import load_tool
 
 image_generation_tool = load_tool("m-ric/text-to-image", trust_remote_code=True)
 ```
-We can also import a huggingface space as a tool using the `Tool.from_space()` function, making it possible to 
-integrate with thousands of spaces from the community for various tasks. 
+
+We can also import a huggingface space as a tool using the `Tool.from_space()` function, making it possible to
+integrate with thousands of spaces from the community for various tasks.
 
 We can also import tools from Langchain in our smolagents workflow. To do this, we'll make use of the `Tool.
 from_langchain()`
 
 #### Logging and Monitoring
+
 Smolagents uses OpenTelemetry standard for instrumenting agent runs, making it possible to inspection of agent
 activities and logging. Using [Langfuse](https://langfuse.com/)
 or [alternatives](https://huggingface.co/docs/smolagents/tutorials/inspect_runs) and `SmolagentsInstrumentator` we
@@ -246,6 +296,7 @@ pip install opentelemetry-sdk opentelemetry-exporter-otlp openinference-instrume
 ```
 
 Then we go to Langfuse to create an account and get our API keys, after which we can now do the following;
+
 ```python
 import os
 import base64
@@ -254,11 +305,11 @@ from openinference.instrumentation.smolagents import SmolagentsInstrumentor
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
-LANGFUSE_PUBLIC_KEY="pk-1f-...."
-LANGFUSE_SECRET_KEY="pk-1f-...."
-LANGFUSE_AUTH=base64.b16encode(f"{LANGFUSE_PUBLIC_KEY}:{LANGFUSE_SECRET_KEY}".encode()).decode()
+LANGFUSE_PUBLIC_KEY = "pk-1f-...."
+LANGFUSE_SECRET_KEY = "pk-1f-...."
+LANGFUSE_AUTH = base64.b16encode(f"{LANGFUSE_PUBLIC_KEY}:{LANGFUSE_SECRET_KEY}".encode()).decode()
 
-os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = "https://cloud.langfuse.com/api/public/otel" # For EU data region
+os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = "https://cloud.langfuse.com/api/public/otel"  # For EU data region
 # os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = "https://us.cloud.langfuse.com/api/public/otel" # US data region
 os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = f"Authorization=Basic {LANGFUSE_AUTH}"
 
@@ -267,12 +318,13 @@ trace_provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter()))
 SmolagentsInstrumentor().instrument(trace_provider=trace_provider)
 ```
 
-With the above, runs from our agent are now being logged to Langfuse, giving us full visibility into the agents 
+With the above, runs from our agent are now being logged to Langfuse, giving us full visibility into the agents
 behavior.
 
 #### Classwork
-- Play with other peoples agents, even import 
+
+- Play with other peoples agents, even import
 - Connect to OpenTelemetry and see own agent in action
-- Setup Gradio UI 
+- Setup Gradio UI
 - Answer questions in course forum
-- 
+- Configuring smolagents with security setting and e2b sandbox

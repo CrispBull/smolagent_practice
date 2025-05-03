@@ -1,7 +1,16 @@
-from smolagents import tool, load_tool, TransformersModel, Tool
+import os.path
+
+import helium
+from PIL import Image
+import requests
+from io import BytesIO
+from litellm import max_tokens
+from smolagents import tool, load_tool, TransformersModel, Tool, OpenAIServerModel
 from langchain.docstore.document import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.retrievers import BM25Retriever
+from smolagents.utils import encode_image_base64, make_image_url
+
 
 @tool
 def get_current_time_in_timezone(timeZone: str) -> str:
@@ -174,3 +183,58 @@ space_image_tool = Tool.from_space("black-forest-labs/FLUX.1-schnell",
                                    )
 
 # langchain_search_tool = Tool.from_langchain(load_tools(["serpapi"])[0])
+
+def check_reasoning_and_plot(final_answer, agent_memory):
+    multimodal_model = OpenAIServerModel("gpt-4o", max_tokens=16192)
+    filepath = "saved_map.png"
+    assert os.path.exists(filepath), "Make sure to save the plot under map_saved.png!"
+    image = Image.open(filepath)
+    prompt = (
+        f"Here is a user-given task and the agent steps: {agent_memory.get_succinct_steps()}. Now here is the plot that was made."
+        "Please check that the reasoning process and plot are correct: do they correctly answer the given task?"
+        "First list reasons why yes/no, then write your final decision: PASS in caps lock if it is satisfactory, FAIL if it is not."
+        "Don't be harsh: if the plot mostly solves the task, it should pass."
+        "To pass, a plot should be made using px.scatter_map and not any other method (scatter_map looks nicer)."
+    )
+
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": prompt,
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {"url": make_image_url(encode_image_base64(image))},
+                },
+            ],
+        }
+    ]
+    output = multimodal_model(messages).content
+    print("Feedback: ", output)
+    if "FAIL" in output:
+        raise Exception(output)
+    return True
+
+image_urls = [
+    "https://upload.wikimedia.org/wikipedia/commons/e/e8/The_Joker_at_Wax_Museum_Plus.jpg", # Joker image
+    "https://upload.wikimedia.org/wikipedia/en/9/98/Joker_%28DC_Comics_character%29.jpg" # Joker image
+]
+
+images = []
+for url in image_urls:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+    }
+    response = requests.get(url, headers=headers)
+    image = Image.open(BytesIO(response.content)).convert("RGB")
+    images.append(image)
+
+
+
+
+
+
+
